@@ -1,0 +1,12 @@
+scheduledTask:
+  # How frequently to run the rollup task (must match [1-9]+[0-9]*-[mMhHdD])
+  # e.g. 2-h == every 2 hours, 30-m == every 30 minutes, 1-d == once a day
+  # defauls to 1-h if nothing is specified or input fails to parse
+  twilioScraperJobFrequency: 1-m
+
+http:
+  port: 8080
+  adminPort: 8081
+
+logging:
+  level: DEBUG
