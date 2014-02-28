@@ -1,6 +1,6 @@
 package com.blackbaud.messagecollector;
 
-import com.blackbaud.messagecollector.job.TwilioScraperJobFactory;
+import com.blackbaud.messagecollector.job.DataConverterJobFactory;
 import com.blackbaud.messagecollector.quartz.QuartzManager;
 import com.blackbaud.messagecollector.resources.SMSResponseResource;
 import com.yammer.dropwizard.Service;
@@ -36,10 +36,10 @@ public class MessageCollector extends Service<MessageCollectorConfiguration> {
              logger.info("unable to instantiate quartz scheduler.");
          }
 
-        TwilioScraperJobFactory twilioScraperJobFactory = new TwilioScraperJobFactory();
+        DataConverterJobFactory dataConverterJobFactory = new DataConverterJobFactory();
 
         environment.addResource(new SMSResponseResource());
-        environment.manage(new QuartzManager(scheduler, configuration.getScheduledTaskConfiguration(), twilioScraperJobFactory));
+        environment.manage(new QuartzManager(scheduler, configuration.getScheduledTaskConfiguration(), dataConverterJobFactory));
     }
 
 }

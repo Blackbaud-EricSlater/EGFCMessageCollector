@@ -6,11 +6,11 @@ import org.quartz.SchedulerException;
 import org.quartz.spi.JobFactory;
 import org.quartz.spi.TriggerFiredBundle;
 
-public class TwilioScraperJobFactory implements JobFactory {
+public class DataConverterJobFactory implements JobFactory {
 
     @Override
     public Job newJob(TriggerFiredBundle bundle, Scheduler scheduler) throws SchedulerException {
-        return new TwilioScraperJob();
+        return new DataConverterJob();
     }
 
 }

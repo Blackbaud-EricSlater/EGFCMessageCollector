@@ -1,7 +1,7 @@
 package com.blackbaud.messagecollector.quartz;
 
-import com.blackbaud.messagecollector.job.TwilioScraperJob;
-import com.blackbaud.messagecollector.job.TwilioScraperJobFactory;
+import com.blackbaud.messagecollector.job.DataConverterJob;
+import com.blackbaud.messagecollector.job.DataConverterJobFactory;
 import com.yammer.dropwizard.lifecycle.Managed;
 import org.quartz.*;
 import org.quartz.impl.matchers.GroupMatcher;
@@ -19,16 +19,16 @@ public class QuartzManager implements Managed {
 
     private Scheduler scheduler;
     private Frequency jobFrequency;
-    private TwilioScraperJobFactory twilioScraperJobFactory;
+    private DataConverterJobFactory dataConverterJobFactory;
 
     final private Logger logger = LoggerFactory.getLogger(QuartzManager.class);
 
     public QuartzManager(Scheduler scheduler,
                          ScheduledTaskConfiguration config,
-                         TwilioScraperJobFactory twilioScraperJobFactory) {
+                         DataConverterJobFactory dataConverterJobFactory) {
         this.scheduler = scheduler;
         this.jobFrequency = parseFrequency(config.getTwilioScraperJobFrequency());
-        this.twilioScraperJobFactory = twilioScraperJobFactory;
+        this.dataConverterJobFactory = dataConverterJobFactory;
     }
 
     @Override
@@ -57,7 +57,7 @@ public class QuartzManager implements Managed {
     private void buildPullFromTwilioJob() throws SchedulerException {
         logger.info("Building CalculateAggregateFailureRateJob");
 
-        scheduler.setJobFactory(twilioScraperJobFactory);
+        scheduler.setJobFactory(dataConverterJobFactory);
 
         //Do not schedule the job more than once
         String jobName;
@@ -67,7 +67,7 @@ public class QuartzManager implements Managed {
                 return;
         }
 
-        JobDetail job = newJob(TwilioScraperJob.class).withIdentity("TwilioScraperJob").build();
+        JobDetail job = newJob(DataConverterJob.class).withIdentity("TwilioScraperJob").build();
         Trigger trigger = buildTrigger(jobFrequency);
         scheduler.scheduleJob(job, trigger);
 
