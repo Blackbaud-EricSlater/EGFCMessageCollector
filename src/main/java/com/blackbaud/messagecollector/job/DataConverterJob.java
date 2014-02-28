@@ -29,10 +29,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class DataConverterJob implements Job {
 
@@ -40,6 +39,17 @@ public class DataConverterJob implements Job {
 
     public static final String ACCOUNT_SID = "ACdb24e1e8078283f9f7ce1cf464f124c7";
     public static final String AUTH_TOKEN = "2e9cf192efa44c678fe91c6ea9430e1b";
+
+    private static Map<String, String> SHORT_NAME_TO_LONG_NAME = new HashMap<>();
+    static {
+        SHORT_NAME_TO_LONG_NAME.put("AARP", "American Association of Retired Persons");
+        SHORT_NAME_TO_LONG_NAME.put("EDF", "Environmental Defense Fund");
+        SHORT_NAME_TO_LONG_NAME.put("JDRF", "Juvenile Diabetes Research Foundation");
+        SHORT_NAME_TO_LONG_NAME.put("LCV", "League of Conservation Voters");
+        SHORT_NAME_TO_LONG_NAME.put("MJFF", "Michael J. Fox Foundation");
+        SHORT_NAME_TO_LONG_NAME.put("LIVESTRONG", "Livestrong");
+        SHORT_NAME_TO_LONG_NAME.put("KOMEN", "Susan G. Komen");
+    }
 
     public static final String INBOUND_REPLY = "inbound";
 
@@ -77,10 +87,36 @@ public class DataConverterJob implements Job {
         for (Message m : messageList) {
             if (m.getDirection().equals(INBOUND_REPLY)) {
                 logger.debug("made list entry to send to salesforce");
-                surveyResponseList.add(new SurveyResponse(m.getFrom(), m.getDateSent(), m.getBody(), m.getSid()));
+                Map.Entry<String,String> names = parseNameFromMessage(m.getBody());
+                if(names != null) {
+                    surveyResponseList.add(new SurveyResponse(m.getFrom(),
+                                                              m.getDateSent(),
+                                                              names.getValue(),
+                                                              names.getKey(),
+                                                              m.getSid(),
+                                                              "005F0000003VVjD"));
+                }
             }
         }
         return surveyResponseList;
+    }
+
+    private Map.Entry<String,String> parseNameFromMessage(String body) {
+        logger.info("Parsing SMS message with contents: "  + body);
+        for (Map.Entry e : SHORT_NAME_TO_LONG_NAME.entrySet()) {
+            Matcher m = Pattern.compile(Pattern.quote((String)e.getKey()), Pattern.CASE_INSENSITIVE).matcher(body);
+            if(m.find()) {
+                logger.info("Done Parsing. Match.");
+                return e;
+            }
+            m = Pattern.compile(Pattern.quote((String)e.getValue()), Pattern.CASE_INSENSITIVE).matcher(body);
+            if(m.find()) {
+                logger.info("Done Parsing. Match.");
+                return e;
+            }
+        }
+        logger.info("Done Parsing. No Match Found.");
+        return null;
     }
 
     private String authenticateWithSalesforce()
@@ -142,6 +178,8 @@ public class DataConverterJob implements Job {
             ObjectMapper mapper = new ObjectMapper();
             String asJson = mapper.writeValueAsString(sr);
 
+            logger.info("Sending JSON: " + asJson);
+
             String token = "Bearer " + authToken;
 
             httpPost.setHeader("Authorization", token);
@@ -152,7 +190,6 @@ public class DataConverterJob implements Job {
             httpPost.setEntity(entity);
 
             HttpClient client = new DefaultHttpClient();
-            HttpParams params = client.getParams();
 
             HttpResponse response = client.execute(httpPost);
             String responseEntity = EntityUtils.toString(response.getEntity());

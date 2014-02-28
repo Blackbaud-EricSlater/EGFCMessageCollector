@@ -15,17 +15,27 @@ public class SurveyResponse {
     @JsonProperty("Vote__c")
     private String vote;
 
+    @JsonProperty("Short_Name__c")
+    private String shortName;
+
     @JsonProperty("Twilio_Id__c")
     private String twilioId;
+
+    @JsonProperty("Referrer__c")
+    private String referrer;
 
     public SurveyResponse(String phone,
                           Date responseDate,
                           String vote,
-                          String twilioId) {
+                          String shortName,
+                          String twilioId,
+                          String referrer) {
         this.phone = phone;
         this.responseDate = responseDate;
         this.vote = vote;
+        this.shortName = shortName;
         this.twilioId = twilioId;
+        this.referrer = referrer;
     }
 
     public String getPhone() {
@@ -57,5 +67,21 @@ public class SurveyResponse {
 
     public void setTwilioId(String twilioId) {
         this.twilioId = twilioId;
+    }
+
+    public String getShortName() {
+        return shortName;
+    }
+
+    public void setShortName(String shortName) {
+        this.shortName = shortName;
+    }
+
+    public String getReferrer() {
+        return referrer;
+    }
+
+    public void setReferrer(String referrer) {
+        this.referrer = referrer;
     }
 }
