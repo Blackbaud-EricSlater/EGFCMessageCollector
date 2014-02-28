@@ -2,6 +2,7 @@ package com.blackbaud.messagecollector.job;
 
 
 import com.blackbaud.messagecollector.core.SurveyResponse;
+import com.blackbaud.messagecollector.dao.MessageDAO;
 import com.twilio.sdk.TwilioRestClient;
 import com.twilio.sdk.resource.instance.Message;
 import com.twilio.sdk.resource.list.MessageList;
@@ -53,6 +54,12 @@ public class DataConverterJob implements Job {
 
     public static final String INBOUND_REPLY = "inbound";
 
+    private MessageDAO messageDAO;
+
+    public DataConverterJob(MessageDAO dao) {
+        this.messageDAO = dao;
+    }
+
     public void execute(JobExecutionContext context) throws JobExecutionException {
 
         TwilioRestClient client = new TwilioRestClient(ACCOUNT_SID, AUTH_TOKEN);
@@ -86,15 +93,22 @@ public class DataConverterJob implements Job {
         List<SurveyResponse> surveyResponseList = new ArrayList<>();
         for (Message m : messageList) {
             if (m.getDirection().equals(INBOUND_REPLY)) {
-                logger.debug("made list entry to send to salesforce");
+                String twilioId = m.getSid();
+                int count = messageDAO.doesMessageExist(twilioId);
+                if (count > 0)
+                    continue;
                 Map.Entry<String,String> names = parseNameFromMessage(m.getBody());
                 if(names != null) {
                     surveyResponseList.add(new SurveyResponse(m.getFrom(),
                                                               m.getDateSent(),
                                                               names.getValue(),
                                                               names.getKey(),
-                                                              m.getSid(),
+                                                              twilioId,
                                                               "005F0000003VVjD"));
+                    logger.info("made list entry to send to salesforce");
+                } else {
+                    messageDAO.insertIntoMessage(twilioId);
+                    logger.info("Invalid message parsed. Inserted to avoid repeat processing.");
                 }
             }
         }
@@ -195,12 +209,17 @@ public class DataConverterJob implements Job {
             String responseEntity = EntityUtils.toString(response.getEntity());
 
             int responseCode = response.getStatusLine().getStatusCode();
-            if (responseCode == 200 || responseCode == 201)
+            if (responseCode == 200 || responseCode == 201) {
                 logger.info("New entry successfully created");
-            else if (responseCode == 400 && responseEntity.contains("DUPLICATE_VALUE"))
+                messageDAO.insertIntoMessage(sr.getTwilioId());
+                logger.info("Entry inserted in DB");
+            } else if (responseCode == 400 && responseEntity.contains("DUPLICATE_VALUE")) {
                 logger.info("Duplicate Submitted");
-            else
+                messageDAO.insertIntoMessage(sr.getTwilioId());
+                logger.info("Entry inserted in DB");
+            } else {
                 logger.info("Salesforce rejected submission!! Code: " + responseCode + " " + responseEntity);
+            }
         }
     }
 }

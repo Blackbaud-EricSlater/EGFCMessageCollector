@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-2.0.xsd">
+
+    <changeSet id="1" author="eslater" context="app_main">
+
+        <createTable tableName="Message">
+            <column name="twilioId" type="VARCHAR(200)">
+                <constraints nullable="false"/>
+            </column>
+          </createTable>
+
+        <addPrimaryKey columnNames="twilioId"
+                       constraintName="pk_Message"
+                       tableName="Message" />
+
+    </changeSet>
+</databaseChangeLog>
